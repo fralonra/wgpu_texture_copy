@@ -1,7 +1,7 @@
 use anyhow::*;
 use image::io::Reader;
 use std::{borrow::Cow, fs::File, io::BufReader};
-use wgpu::{Device, Queue};
+use wgpu::{util::DeviceExt, Device, Queue};
 
 const DATA_PER_PIXEL: u32 = 4;
 const U8_SIZE: u32 = std::mem::size_of::<u8>() as u32;
@@ -56,6 +56,16 @@ fn compute_and_get_texture(
                 },
                 count: None,
             },
+            wgpu::BindGroupLayoutEntry {
+                binding: 2,
+                visibility: wgpu::ShaderStages::COMPUTE,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Storage { read_only: true },
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
+                },
+                count: None,
+            },
         ],
     });
 
@@ -101,6 +111,13 @@ fn compute_and_get_texture(
 
     let output_texture_view = output_texture.create_view(&wgpu::TextureViewDescriptor::default());
 
+    let color: [f32; 4] = [1.0, 1.0, 0.0, 1.0];
+    let color_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        label: Some("Buffer"),
+        contents: bytemuck::cast_slice(&color),
+        usage: wgpu::BufferUsages::STORAGE,
+    });
+
     let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
         label: Some("Bind Group"),
         layout: &bind_group_layout,
@@ -112,6 +129,10 @@ fn compute_and_get_texture(
             wgpu::BindGroupEntry {
                 binding: 1,
                 resource: wgpu::BindingResource::TextureView(&output_texture_view),
+            },
+            wgpu::BindGroupEntry {
+                binding: 2,
+                resource: color_buffer.as_entire_binding(),
             },
         ],
     });

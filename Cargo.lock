@@ -1332,6 +1332,7 @@ name = "wgpu_texture_copy"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "bytemuck",
  "futures",
  "image",
  "wgpu",
